@@ -1,7 +1,7 @@
 package service
 
-import "context"
+import "crawler/domain/model"
 
-type MeetingsService interface {
-	Start(meeting *model.Meeting, ctx context.Context) (*model.Meeting, error)
+type MessageConsumer interface {
+	Consume() chan model.CrawledWebsite
 }
