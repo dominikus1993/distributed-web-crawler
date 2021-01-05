@@ -27,12 +27,23 @@ func publish(context context.Context, parsedChannel chan model.CrawledWebsite, p
 }
 
 func parse(msg model.CrawlWebsite, parser service.WebsiteParser, parsedChannel chan model.CrawledWebsite) {
-	parser.Parse(msg.Url)
+	res, err := parser.Parse(msg.Url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	parsedChannel <- res
 }
 
 func (crawler *crawlerUseCase) StartCrawling(c context.Context) {
-	consumeChannel := crawler.subscriber.Consume(c)
-	for message := range consumeChannel {
+	crawledWebsitesStream := make(chan model.CrawledWebsite, 10)
 
+	go publish(c, crawledWebsitesStream, crawler.publisher)
+
+	consumeChannel := crawler.subscriber.Consume(c)
+
+	for message := range consumeChannel {
+		go parse(message, crawler.parser, crawledWebsitesStream)
 	}
+
+	close(crawledWebsitesStream)
 }

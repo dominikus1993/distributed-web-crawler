@@ -14,5 +14,5 @@ type MessagePublisher interface {
 }
 
 type WebsiteParser interface {
-	Parse(url string) chan model.CrawledWebsite
+	Parse(url string) (model.CrawledWebsite, error)
 }
