@@ -5,17 +5,20 @@ import (
 	"crawler/application/service"
 	"crawler/domain/model"
 	"log"
+	"time"
 )
 
 type fakeMessageConsumer struct {
 }
 
-func (f *fakeMessageConsumer) Consume(c context.Context) chan *model.CrawlWebsite {
-	stream := make(chan *model.CrawlWebsite)
+func (f *fakeMessageConsumer) Consume(c context.Context) chan model.CrawlWebsite {
+	stream := make(chan model.CrawlWebsite)
 
 	go func() {
-		res := model.NewCrawlWebsite("https://jbzd.com.pl/")
-		stream <- res
+		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
+		time.Sleep(2 * time.Second)
+		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/2")
+		close(stream)
 	}()
 
 	return stream

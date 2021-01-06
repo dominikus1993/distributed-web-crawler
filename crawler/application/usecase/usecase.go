@@ -5,6 +5,7 @@ import (
 	"crawler/application/service"
 	"crawler/domain/model"
 	"log"
+	"sync"
 )
 
 type CrawlerUseCase interface {
@@ -17,7 +18,8 @@ type crawlerUseCase struct {
 	subscriber service.MessageConsumer
 }
 
-func publish(context context.Context, parsedChannel chan *model.CrawledWebsite, publisher service.MessagePublisher) {
+func publish(context context.Context, parsedChannel chan *model.CrawledWebsite, publisher service.MessagePublisher, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for message := range parsedChannel {
 		err := publisher.Publish(context, message)
 		if err != nil {
@@ -26,7 +28,8 @@ func publish(context context.Context, parsedChannel chan *model.CrawledWebsite, 
 	}
 }
 
-func parse(url string, parser service.WebsiteParser, parsedChannel chan *model.CrawledWebsite) {
+func parse(url string, parser service.WebsiteParser, parsedChannel chan *model.CrawledWebsite, wg *sync.WaitGroup) {
+	defer wg.Done()
 	res, err := parser.Parse(url)
 	if err != nil {
 		log.Fatalln(err)
@@ -36,16 +39,20 @@ func parse(url string, parser service.WebsiteParser, parsedChannel chan *model.C
 
 func (crawler *crawlerUseCase) StartCrawling(c context.Context) {
 	crawledWebsitesStream := make(chan *model.CrawledWebsite, 10)
-
-	go publish(c, crawledWebsitesStream, crawler.publisher)
+	pwg := &sync.WaitGroup{}
+	pubwg := &sync.WaitGroup{}
+	pubwg.Add(1)
+	go publish(c, crawledWebsitesStream, crawler.publisher, pubwg)
 
 	consumeChannel := crawler.subscriber.Consume(c)
 
 	for message := range consumeChannel {
-		go parse(message.Url, crawler.parser, crawledWebsitesStream)
+		pwg.Add(1)
+		go parse(message.Url, crawler.parser, crawledWebsitesStream, pwg)
 	}
-
+	pwg.Wait()
 	close(crawledWebsitesStream)
+	pubwg.Wait()
 }
 
 func NewCrawlerUseCase(parser service.WebsiteParser, publisher service.MessagePublisher, subscriber service.MessageConsumer) CrawlerUseCase {
