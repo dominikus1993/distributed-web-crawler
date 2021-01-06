@@ -16,11 +16,11 @@ func (f *fakeMessageConsumer) Consume(c context.Context) chan model.CrawlWebsite
 	stream := make(chan model.CrawlWebsite)
 
 	go func() {
-		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
-		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
-		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
-		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
-		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- model.NewCrawlWebsite("https://jbzd.com.pl/")
 		close(stream)
 	}()
 

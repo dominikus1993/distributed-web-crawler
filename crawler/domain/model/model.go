@@ -12,8 +12,8 @@ type CrawledWebsite struct {
 	Contents *[]Content `json:"contents,omitempty"`
 }
 
-func NewCrawlWebsite(url string) *CrawlWebsite {
-	return &CrawlWebsite{Url: url}
+func NewCrawlWebsite(url string) CrawlWebsite {
+	return CrawlWebsite{Url: url}
 }
 
 func NewCrawledWebsite(url string, contents *[]Content) *CrawledWebsite {
