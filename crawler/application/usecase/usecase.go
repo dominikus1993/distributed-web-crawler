@@ -17,7 +17,7 @@ type crawlerUseCase struct {
 	subscriber service.MessageConsumer
 }
 
-func publish(context context.Context, parsedChannel chan model.CrawledWebsite, publisher service.MessagePublisher) {
+func publish(context context.Context, parsedChannel chan *model.CrawledWebsite, publisher service.MessagePublisher) {
 	for message := range parsedChannel {
 		err := publisher.Publish(context, message)
 		if err != nil {
@@ -26,8 +26,8 @@ func publish(context context.Context, parsedChannel chan model.CrawledWebsite, p
 	}
 }
 
-func parse(msg model.CrawlWebsite, parser service.WebsiteParser, parsedChannel chan model.CrawledWebsite) {
-	res, err := parser.Parse(msg.Url)
+func parse(url string, parser service.WebsiteParser, parsedChannel chan *model.CrawledWebsite) {
+	res, err := parser.Parse(url)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -35,15 +35,19 @@ func parse(msg model.CrawlWebsite, parser service.WebsiteParser, parsedChannel c
 }
 
 func (crawler *crawlerUseCase) StartCrawling(c context.Context) {
-	crawledWebsitesStream := make(chan model.CrawledWebsite, 10)
+	crawledWebsitesStream := make(chan *model.CrawledWebsite, 10)
 
 	go publish(c, crawledWebsitesStream, crawler.publisher)
 
 	consumeChannel := crawler.subscriber.Consume(c)
 
 	for message := range consumeChannel {
-		go parse(message, crawler.parser, crawledWebsitesStream)
+		go parse(message.Url, crawler.parser, crawledWebsitesStream)
 	}
 
 	close(crawledWebsitesStream)
+}
+
+func NewCrawlerUseCase(parser service.WebsiteParser, publisher service.MessagePublisher, subscriber service.MessageConsumer) CrawlerUseCase {
+	return &crawlerUseCase{parser: parser, publisher: publisher, subscriber: subscriber}
 }

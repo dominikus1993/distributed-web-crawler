@@ -6,13 +6,13 @@ import (
 )
 
 type MessageConsumer interface {
-	Consume(c context.Context) chan model.CrawlWebsite
+	Consume(c context.Context) chan *model.CrawlWebsite
 }
 
 type MessagePublisher interface {
-	Publish(c context.Context, msg model.CrawledWebsite) error
+	Publish(c context.Context, msg *model.CrawledWebsite) error
 }
 
 type WebsiteParser interface {
-	Parse(url string) (model.CrawledWebsite, error)
+	Parse(url string) (*model.CrawledWebsite, error)
 }
