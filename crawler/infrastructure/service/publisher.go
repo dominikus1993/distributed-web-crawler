@@ -9,12 +9,13 @@ import (
 	"github.com/streadway/amqp"
 )
 
+const ExchangeName = "crawled-media"
+
 type ampqPublisher struct {
 	rabbitmq *amqp.Connection
 }
 
 func (f *ampqPublisher) Publish(c context.Context, msg *model.CrawledWebsite) error {
-	const exchange = "media"
 	ch, err := f.rabbitmq.Channel()
 	if err != nil {
 		return err
@@ -22,13 +23,13 @@ func (f *ampqPublisher) Publish(c context.Context, msg *model.CrawledWebsite) er
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		exchange, // name
-		"topic",  // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
+		ExchangeName, // name
+		"topic",      // type
+		true,         // durable
+		false,        // auto-deleted
+		false,        // internal
+		false,        // no-wait
+		nil,          // arguments
 	)
 
 	if err != nil {
@@ -41,10 +42,10 @@ func (f *ampqPublisher) Publish(c context.Context, msg *model.CrawledWebsite) er
 	}
 
 	err = ch.Publish(
-		exchange, // exchange
-		"#",      // routing key
-		false,    // mandatory
-		false,    // immediate
+		ExchangeName, // exchange
+		"#",          // routing key
+		false,        // mandatory
+		false,        // immediate
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        res,

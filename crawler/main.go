@@ -17,7 +17,7 @@ func main() {
 	defer conn.Close()
 	parser := service.NewWebsiteParser()
 	publisher := service.NewMessagePublisher(conn)
-	consumer := service.NewMessageConsumer()
+	consumer := service.NewMessageConsumer(conn)
 	usecase := usecase.NewCrawlerUseCase(parser, publisher, consumer)
 	ctx := context.TODO()
 	usecase.StartCrawling(ctx)
