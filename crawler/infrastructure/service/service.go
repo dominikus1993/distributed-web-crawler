@@ -4,9 +4,7 @@ import (
 	"context"
 	"crawler/application/service"
 	"crawler/domain/model"
-	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/gocolly/colly/v2"
 )
@@ -19,8 +17,10 @@ func (f *fakeMessageConsumer) Consume(c context.Context) chan model.CrawlWebsite
 
 	go func() {
 		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
-		time.Sleep(2 * time.Second)
-		stream <- *model.NewCrawlWebsite("https://www.rossmann.pl/")
+		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
+		stream <- *model.NewCrawlWebsite("https://jbzd.com.pl/")
 		close(stream)
 	}()
 
@@ -45,26 +45,10 @@ func (f *htmlParser) Parse(url string) (*model.CrawledWebsite, error) {
 	return model.NewCrawledWebsite(url, &contents), nil
 }
 
-type consolePublisher struct {
-}
-
-func (f *consolePublisher) Publish(c context.Context, msg *model.CrawledWebsite) error {
-	res, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	log.Println(string(res))
-	return nil
-}
-
 func NewMessageConsumer() service.MessageConsumer {
 	return &fakeMessageConsumer{}
 }
 
 func NewWebsiteParser() service.WebsiteParser {
 	return &htmlParser{}
-}
-
-func NewMessagePublisher() service.MessagePublisher {
-	return &consolePublisher{}
 }
