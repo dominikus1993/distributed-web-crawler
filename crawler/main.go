@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crawler/application/usecase"
+	"crawler/infrastructure/env"
 	"crawler/infrastructure/service"
 	"log"
 
@@ -10,7 +11,8 @@ import (
 )
 
 func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	connection := env.GetEnvOrDefault("RABBITMQ_CONNECTION", "amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial(connection)
 	if err != nil {
 		log.Fatalln("Failed to connect to RabbitMQ", err)
 	}
