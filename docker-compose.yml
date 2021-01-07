@@ -1,5 +1,13 @@
 version: '3'
 services:
+  backend:
+    build:
+      context: ./crawler
+      dockerfile: ./Dockerfile
+    environment:
+      - RABBITMQ_CONNECTION=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
   rabbitmq:
     image: rabbitmq:3.8-management
     ports:

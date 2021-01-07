@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	log.Println("Start Service")
 	connection := env.GetEnvOrDefault("RABBITMQ_CONNECTION", "amqp://guest:guest@localhost:5672/")
 	conn, err := amqp.Dial(connection)
 	if err != nil {
@@ -23,5 +24,5 @@ func main() {
 	usecase := usecase.NewCrawlerUseCase(parser, publisher, consumer)
 	ctx := context.TODO()
 	usecase.StartCrawling(ctx)
-	print("test")
+	log.Println("Stop Service")
 }
