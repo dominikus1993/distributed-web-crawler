@@ -3,6 +3,7 @@
 import express from "express";
 import http from "http";
 import ioserver, { Socket } from 'socket.io';
+import amqp from "amqplib";
 
 const port = process.env.PORT || 4001;
 import index from "./routes/index";
@@ -13,6 +14,8 @@ app.use(index);
 const server = http.createServer(app);
 
 const io = (ioserver as any)(server, { cors: { orgin: "*" }}); // < Interesting!
+
+const rabbitmq = amqp.connect(process.env.RABBITMQ_CONNECTION || "amqp://guest:guest@localhost:5672/")
 
 /**
  * @param {{ emit: (arg0: string, arg1: Date) => void; }} socket
