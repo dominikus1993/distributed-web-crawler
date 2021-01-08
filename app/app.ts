@@ -12,7 +12,7 @@ app.use(index);
 
 const server = http.createServer(app);
 
-const io = (ioserver as any)(server); // < Interesting!
+const io = (ioserver as any)(server, { cors: { orgin: "*" }}); // < Interesting!
 
 /**
  * @param {{ emit: (arg0: string, arg1: Date) => void; }} socket
