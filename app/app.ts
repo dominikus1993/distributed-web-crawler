@@ -1,33 +1,33 @@
 //@ts-check
 
-const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
+import express from "express";
+import http from "http";
+import ioserver, { Socket } from 'socket.io';
 
 const port = process.env.PORT || 4001;
-const index = require("./routes/index");
+import index from "./routes/index";
 
 const app = express();
 app.use(index);
 
 const server = http.createServer(app);
 
-const io = socketIo(server); // < Interesting!
+const io = (ioserver as any)(server); // < Interesting!
 
 /**
  * @param {{ emit: (arg0: string, arg1: Date) => void; }} socket
  */
-const getApiAndEmit = socket => {
+const getApiAndEmit = (socket: Socket) => {
     const response = new Date();
     // Emitting a new message. Will be consumed by the client
     socket.emit("FromAPI", response);
   };
 
-let interval;
+let interval: NodeJS.Timeout;
 /**
  * @param {{ on?: any; emit?: (arg0: string, arg1: Date) => void; }} socket
  */
-io.on("connection", (socket) => {
+io.on("connection", (socket: Socket) => {
     console.log("New client connected");
     if (interval) {
       clearInterval(interval);
