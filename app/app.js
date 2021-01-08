@@ -14,6 +14,9 @@ const server = http.createServer(app);
 
 const io = socketIo(server); // < Interesting!
 
+/**
+ * @param {{ emit: (arg0: string, arg1: Date) => void; }} socket
+ */
 const getApiAndEmit = socket => {
     const response = new Date();
     // Emitting a new message. Will be consumed by the client
@@ -21,6 +24,9 @@ const getApiAndEmit = socket => {
   };
 
 let interval;
+/**
+ * @param {{ on?: any; emit?: (arg0: string, arg1: Date) => void; }} socket
+ */
 io.on("connection", (socket) => {
     console.log("New client connected");
     if (interval) {
