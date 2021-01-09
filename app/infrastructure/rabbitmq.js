@@ -10,7 +10,7 @@ const rabbit = require("amqp-connection-manager")
  * @param {import("amqp-connection-manager").ChannelWrapper} channel
  */
 async function publishToRabbitMq(channel, { exchange, message, topic = "#"}) {
-    channel.publish(exchange, topic, Buffer.from(message))
+    channel.publish(exchange, topic, Buffer.from(JSON.stringify(message)))
 }
 
 module.exports = { publishToRabbitMq }

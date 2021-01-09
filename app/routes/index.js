@@ -13,7 +13,7 @@ class Routing {
     routes() {
         this.#router.post("/",async (req, res) => {
             const { url } = req.body;
-            await publishToRabbitMq(this.#channel, { exchange: "crawl-media", message: JSON.stringify({ url }) })
+            await publishToRabbitMq(this.#channel, { exchange: "crawl-media", message: { url } })
             res.send({ status: "ok" }).status(204);
         })
         return this.#router;
