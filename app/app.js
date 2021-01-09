@@ -9,7 +9,7 @@ const port = process.env.PORT || 4001;
 const Index = require("./routes/index");
 const router = express.Router();
 const app = express();
-
+app.use(express.json())
 const connection = rabbit.connect([process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/"]);
 const channel = connection.createChannel();
 app.use(Index.from(router, channel).routes());

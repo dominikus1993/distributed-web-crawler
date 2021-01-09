@@ -11,9 +11,10 @@ class Routing {
     }
 
     routes() {
-        this.#router.get("/",async (_, res) => {
-            await publishToRabbitMq(this.#channel, { exchange: "crawl-media", message: JSON.stringify({ url: "https://jbzd.com.pl/" }) })
-            res.send({ response: "I am alive" }).status(200);
+        this.#router.post("/",async (req, res) => {
+            const { url } = req.body;
+            await publishToRabbitMq(this.#channel, { exchange: "crawl-media", message: JSON.stringify({ url }) })
+            res.send({ status: "ok" }).status(204);
         })
         return this.#router;
     }
