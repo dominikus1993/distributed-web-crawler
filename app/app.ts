@@ -7,11 +7,15 @@ const port = process.env.PORT || 4001;
 import { IndexController } from "./routes/index";
 import { Socket } from "socket.io";
 import { RabbitMqBus } from "./infrastructure/rabbitmq";
+import { CrawledMedia } from "./domain/model";
 
 const router = express.Router();
 const app = express();
 app.use(express.json())
 const bus = RabbitMqBus.from(process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/")
+bus.consume({ exchange: "crawled-media", queue: "crawled-media-app"}, (model: CrawledMedia) => {
+  console.log(model.url);
+})
 app.use(IndexController.from(router, bus).routes());
 
 const server = http.createServer(app);
@@ -19,9 +23,6 @@ const server = http.createServer(app);
 // @ts-ignore
 const io = socketIo(server); // < Interesting!
 
-/**
- * @param {{ emit: (arg0: string, arg1: Date) => void; }} socket
- */
 const getApiAndEmit = (socket: Socket) => {
     const response = new Date();
     // Emitting a new message. Will be consumed by the client

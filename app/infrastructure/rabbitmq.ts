@@ -13,7 +13,7 @@ export interface ISubscription {
     readonly topic?: string
 }
 
-function onMessage<T>(action: (obj: T) => Promise<void>) {
+function onMessage<T>(action: (obj: T) => void) {
     return (data: ConsumeMessage | null) => {
         if (data) {
             const msg: T | null | undefined = JSON.parse(data.content.toString())
@@ -39,7 +39,7 @@ export class RabbitMqBus {
         this.#channel.publish(exchange, topic, Buffer.from(JSON.stringify(message)))
     }
 
-    async consume<T>({ exchange, queue, topic = "#" }: ISubscription, action: (obj: T) => Promise<void>) {
+    async consume<T>({ exchange, queue, topic = "#" }: ISubscription, action: (obj: T) => void) {
         const ch = this.#connection.createChannel({
             setup: (channel: Channel) => {
                 return Promise.all([
@@ -51,6 +51,8 @@ export class RabbitMqBus {
                 ])
             }
         })
+        await ch.waitForConnect();
+        console.log("Listening for messages")
         this.#subscriptions.push(ch)
     }
 
