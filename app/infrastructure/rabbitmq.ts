@@ -14,14 +14,16 @@ export interface ISubscription {
 }
 
 function onMessage<T>(action: (obj: T) => void) {
-    return (data: ConsumeMessage | null) => {
-        if (data) {
-            const msg: T | null | undefined = JSON.parse(data.content.toString())
-            if (msg) {
-                action(msg)
+    return (ch: Channel) => {
+        return (data: ConsumeMessage | null) => {
+            if (data) {
+                const msg: T | null | undefined = JSON.parse(data.content.toString())
+                if (msg) {
+                    action(msg)
+                    ch.ack(data)
+                }
             }
         }
-
     }
 }
 
@@ -43,11 +45,11 @@ export class RabbitMqBus {
         const ch = this.#connection.createChannel({
             setup: (channel: Channel) => {
                 return Promise.all([
-                    channel.assertQueue(queue, { exclusive: true, autoDelete: false }),
+                    channel.assertQueue(queue, { exclusive: false, autoDelete: false, durable: true }),
                     channel.assertExchange(exchange, 'topic'),
                     channel.prefetch(1),
                     channel.bindQueue(queue, exchange, topic),
-                    channel.consume(queue, onMessage(action))
+                    channel.consume(queue, onMessage(action)(channel))
                 ])
             }
         })
