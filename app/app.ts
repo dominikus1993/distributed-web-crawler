@@ -1,18 +1,17 @@
-//@ts-check
-
-const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
-const rabbit = require("amqp-connection-manager")
+import express from "express";
+import http from "http";
+import socketIo from "socket.io";
+import rabbit from "amqp-connection-manager";
 
 const port = process.env.PORT || 4001;
-const Index = require("./routes/index");
+import { IndexController } from "./routes/index";
+import { Socket } from "socket.io";
 const router = express.Router();
 const app = express();
 app.use(express.json())
 const connection = rabbit.connect([process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/"]);
 const channel = connection.createChannel();
-app.use(Index.from(router, channel).routes());
+app.use(IndexController.from(router, channel).routes());
 
 const server = http.createServer(app);
 
@@ -22,17 +21,17 @@ const io = socketIo(server); // < Interesting!
 /**
  * @param {{ emit: (arg0: string, arg1: Date) => void; }} socket
  */
-const getApiAndEmit = socket => {
+const getApiAndEmit = (socket: Socket) => {
     const response = new Date();
     // Emitting a new message. Will be consumed by the client
     socket.emit("FromAPI", response);
   };
 
-let interval;
+let interval: NodeJS.Timeout;
 /**
  * @param {{ on?: any; emit?: (arg0: string, arg1: Date) => void; }} socket
  */
-io.on("connection", (socket) => {
+io.on("connection", (socket: Socket) => {
     console.log("New client connected");
     if (interval) {
       clearInterval(interval);
