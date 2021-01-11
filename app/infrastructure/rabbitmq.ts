@@ -1,4 +1,5 @@
-import { ChannelWrapper } from "amqp-connection-manager"
+import rabbit, { ChannelWrapper, AmqpConnectionManager } from "amqp-connection-manager"
+import { Channel, ConsumeMessage } from "amqplib";
 
 export interface IMessage<T> {
     readonly exchange: string
@@ -6,6 +7,56 @@ export interface IMessage<T> {
     readonly topic?: string
 }
 
-export async function publishToRabbitMq<T>(channel: ChannelWrapper, { exchange, message, topic = "#"}: IMessage<T>) {
-    channel.publish(exchange, topic, Buffer.from(JSON.stringify(message)))
+export interface ISubscription {
+    readonly exchange: string
+    readonly queue: string
+    readonly topic?: string
+}
+
+function onMessage<T>(action: (obj: T) => Promise<void>) {
+    return (data: ConsumeMessage | null) => {
+        if (data) {
+            const msg: T | null | undefined = JSON.parse(data.content.toString())
+            if (msg) {
+                action(msg)
+            }
+        }
+
+    }
+}
+
+export class RabbitMqBus {
+    #connection: AmqpConnectionManager;
+    #channel: ChannelWrapper
+    #subscriptions: ChannelWrapper[] = []
+
+    private constructor(connection: AmqpConnectionManager, channel: ChannelWrapper) {
+        this.#connection = connection;
+        this.#channel = channel;
+    }
+
+    async publish<T>({ exchange, message, topic = "#" }: IMessage<T>) {
+        this.#channel.publish(exchange, topic, Buffer.from(JSON.stringify(message)))
+    }
+
+    async consume<T>({ exchange, queue, topic = "#" }: ISubscription, action: (obj: T) => Promise<void>) {
+        const ch = this.#connection.createChannel({
+            setup: (channel: Channel) => {
+                return Promise.all([
+                    channel.assertQueue(queue, { exclusive: true, autoDelete: false }),
+                    channel.assertExchange(exchange, 'topic'),
+                    channel.prefetch(1),
+                    channel.bindQueue(queue, exchange, topic),
+                    channel.consume(queue, onMessage(action))
+                ])
+            }
+        })
+        this.#subscriptions.push(ch)
+    }
+
+    static from(url: string): RabbitMqBus {
+        const connection = rabbit.connect([url ?? "amqp://guest:guest@localhost:5672/"]);
+        const channel = connection.createChannel();
+        return new RabbitMqBus(connection, channel);
+    }
 }

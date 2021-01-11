@@ -1,12 +1,12 @@
 import { ChannelWrapper } from "amqp-connection-manager";
 import { Router } from "express";
-import { publishToRabbitMq } from "../infrastructure/rabbitmq";
+import { RabbitMqBus } from "../infrastructure/rabbitmq";
 
 export class IndexController {
-    #channel : ChannelWrapper
+    #bus : RabbitMqBus
     #router : Router
-    constructor(router: Router, channel: ChannelWrapper) {
-        this.#channel = channel;
+    constructor(router: Router, bus: RabbitMqBus) {
+        this.#bus = bus;
         this.#router = router;
     }
 
@@ -14,14 +14,14 @@ export class IndexController {
         this.#router.post("/",async (req, res) => {
             const { url } : { url: string } = req.body;
 
-            await publishToRabbitMq(this.#channel, { exchange: "crawl-media", message: { url } })
+            await this.#bus.publish({ exchange: "crawl-media", message: { url } })
 
             res.send({ status: "ok" }).status(204);
         })
         return this.#router;
     }
 
-    static from(router: Router, channel: ChannelWrapper)  {
-        return new IndexController(router, channel)
+    static from(router: Router, bus: RabbitMqBus)  {
+        return new IndexController(router, bus)
     }
 }

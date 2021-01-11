@@ -6,12 +6,13 @@ import rabbit from "amqp-connection-manager";
 const port = process.env.PORT || 4001;
 import { IndexController } from "./routes/index";
 import { Socket } from "socket.io";
+import { RabbitMqBus } from "./infrastructure/rabbitmq";
+
 const router = express.Router();
 const app = express();
 app.use(express.json())
-const connection = rabbit.connect([process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/"]);
-const channel = connection.createChannel();
-app.use(IndexController.from(router, channel).routes());
+const bus = RabbitMqBus.from(process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/")
+app.use(IndexController.from(router, bus).routes());
 
 const server = http.createServer(app);
 
