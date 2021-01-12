@@ -20,7 +20,7 @@ app.use(IndexController.from(router, bus).routes());
 
 const server = http.createServer(app);
 
-const io: Socket = (socketIo as any)(server); // < Interesting!
+const io: Socket = (socketIo as any)(server, { cors: { orgin: "*" }}); // < Interesting!
 
 bus.consume({ exchange: "crawled-media", queue: "crawled-media-app"}, (model: CrawledMedia) => {
   console.log(model.url);
