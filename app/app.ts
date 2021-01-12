@@ -1,6 +1,6 @@
 import express from "express";
 import http from "http";
-import socketIo from "socket.io";
+import socketIo, { Server } from "socket.io";
 import rabbit from "amqp-connection-manager";
 
 const port = process.env.PORT || 4001;
@@ -12,16 +12,20 @@ import { CrawledMedia } from "./domain/model";
 const router = express.Router();
 const app = express();
 app.use(express.json())
+
 const bus = RabbitMqBus.from(process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/")
-bus.consume({ exchange: "crawled-media", queue: "crawled-media-app"}, (model: CrawledMedia) => {
-  console.log(model.url);
-})
+
+
 app.use(IndexController.from(router, bus).routes());
 
 const server = http.createServer(app);
 
-// @ts-ignore
-const io = socketIo(server); // < Interesting!
+const io: Socket = (socketIo as any)(server); // < Interesting!
+
+bus.consume({ exchange: "crawled-media", queue: "crawled-media-app"}, (model: CrawledMedia) => {
+  console.log(model.url);
+  io.emit("new-crawled-media", model)
+});
 
 const getApiAndEmit = (socket: Socket) => {
     const response = new Date();
@@ -29,10 +33,9 @@ const getApiAndEmit = (socket: Socket) => {
     socket.emit("FromAPI", response);
   };
 
+
 let interval: NodeJS.Timeout;
-/**
- * @param {{ on?: any; emit?: (arg0: string, arg1: Date) => void; }} socket
- */
+io.emit("")
 io.on("connection", (socket: Socket) => {
     console.log("New client connected");
     if (interval) {
