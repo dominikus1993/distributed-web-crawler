@@ -8,6 +8,7 @@ import { IndexController } from "./routes/index";
 import { Socket } from "socket.io";
 import { RabbitMqBus } from "./infrastructure/rabbitmq";
 import { CrawledMedia } from "./domain/model";
+import { StatusController } from "./routes/status";
 
 const router = express.Router();
 const app = express();
@@ -17,7 +18,7 @@ const bus = RabbitMqBus.from(process.env.RABBITMQ_CONNECTION ?? "amqp://guest:gu
 
 
 app.use(IndexController.from(router, bus).routes());
-
+app.use(StatusController.from(router).routes());
 const server = http.createServer(app);
 
 const io: Socket = (socketIo as any)(server, { cors: { orgin: "*" }}); // < Interesting!

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"tsc -w\" \"nodemon dist/app.js\"",
     "build": "tsc",
+    "build-prod": "tsc -p .",
     "start": "node dist/app.js"
   },
   "keywords": [],

@@ -8,6 +8,16 @@ services:
       - RABBITMQ_CONNECTION=amqp://guest:guest@rabbitmq:5672/
     depends_on:
       - rabbitmq
+    ports:
+      - '4001:4001'
+  app:
+    build:
+      context: ./app
+      dockerfile: ./Dockerfile
+    environment:
+      - RABBITMQ_CONNECTION=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
   rabbitmq:
     image: rabbitmq:3.8-management
     ports:

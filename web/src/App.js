@@ -18,7 +18,43 @@ function list(data) {
 }
 
 function form() {
-
+  const [url, setUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+ 
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsError(false);
+      setIsLoading(true);
+ 
+      try {
+        const result = await axios(url);
+ 
+        setData(result.data);
+      } catch (error) {
+        setIsError(true);
+      }
+ 
+      setIsLoading(false);
+    };
+ 
+    fetchData();
+  }, [url]);
+  return <form>
+          <input
+        type="text"
+        value={query}
+        onChange={event => setQuery(event.target.value)}
+      />
+      <button
+        type="button"
+        onClick={() =>
+          setUrl(`http://hn.algolia.com/api/v1/search?query=${query}`)
+        }
+      >
+        Search
+      </button>
+  </form>
 }
 
 function App() {
