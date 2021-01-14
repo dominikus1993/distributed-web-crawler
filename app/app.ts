@@ -9,9 +9,11 @@ import { Socket } from "socket.io";
 import { RabbitMqBus } from "./infrastructure/rabbitmq";
 import { CrawledMedia } from "./domain/model";
 import { StatusController } from "./routes/status";
+import cors from "cors"
 
 const router = express.Router();
 const app = express();
+app.use(cors({origin: "*" }))
 app.use(express.json())
 
 const bus = RabbitMqBus.from(process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/")
