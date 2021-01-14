@@ -36,7 +36,6 @@ const getApiAndEmit = (socket: Socket) => {
 
 
 let interval: NodeJS.Timeout;
-io.emit("")
 io.on("connection", (socket: Socket) => {
     console.log("New client connected");
     if (interval) {
