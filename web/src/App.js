@@ -38,7 +38,10 @@ function ParseUrlForm() {
   }, [url]);
   return <form>
     <input
-      type="text"
+      type="url"
+      placeholder="https://example.com"
+      pattern="https://.*" size="30"
+      required
       value={query}
       onChange={event => setQuery(event.target.value)}
     />
