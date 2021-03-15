@@ -5,24 +5,35 @@ import (
 	"crawler/application/usecase"
 	"crawler/infrastructure/env"
 	"crawler/infrastructure/service"
-	"log"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
+func createLogger() *log.Logger {
+	logger := log.New()
+	logger.Formatter = &log.JSONFormatter{
+		// disable, as we set our own
+		DisableTimestamp: true,
+	}
+
+	return logger
+}
+
 func main() {
-	log.Println("Start Service")
+	logger := createLogger()
+	log.Infoln("Start Service")
 	connection := env.GetEnvOrDefault("RABBITMQ_CONNECTION", "amqp://guest:guest@localhost:5672/")
 	conn, err := amqp.Dial(connection)
 	if err != nil {
-		log.Fatalln("Failed to connect to RabbitMQ", err)
+		log.WithError(err).Fatalln("Failed to connect to RabbitMQ")
 	}
 	defer conn.Close()
 	parser := service.NewWebsiteParser()
 	publisher := service.NewMessagePublisher(conn)
-	consumer := service.NewMessageConsumer(conn)
+	consumer := service.NewMessageConsumer(conn, logger)
 	usecase := usecase.NewCrawlerUseCase(parser, publisher, consumer)
 	ctx := context.TODO()
 	usecase.StartCrawling(ctx)
-	log.Println("Stop Service")
+	log.Infoln("Stop Service")
 }

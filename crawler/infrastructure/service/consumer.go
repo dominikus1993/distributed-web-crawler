@@ -5,20 +5,22 @@ import (
 	"crawler/application/service"
 	"crawler/domain/model"
 	"encoding/json"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/streadway/amqp"
 )
 
 type ampqMessageConsumer struct {
 	rabbitmq *amqp.Connection
+	logger   *log.Logger
 }
 
-func subscribe(rabbitmq *amqp.Connection, stream chan model.CrawlWebsite) {
+func subscribe(rabbitmq *amqp.Connection, logger *log.Logger, stream chan model.CrawlWebsite) {
 	const exchange = "crawl-media"
 	ch, err := rabbitmq.Channel()
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).Fatalln("Error when trying create channel")
 	}
 	defer ch.Close()
 
@@ -33,7 +35,7 @@ func subscribe(rabbitmq *amqp.Connection, stream chan model.CrawlWebsite) {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).Fatalln("Error when trying declare exchange")
 	}
 
 	q, err := ch.QueueDeclare(
@@ -46,7 +48,7 @@ func subscribe(rabbitmq *amqp.Connection, stream chan model.CrawlWebsite) {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).Fatalln("Error when trying create queue")
 	}
 
 	err = ch.QueueBind(
@@ -58,7 +60,7 @@ func subscribe(rabbitmq *amqp.Connection, stream chan model.CrawlWebsite) {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).Fatalln("Error when trying bind queue")
 	}
 
 	msgs, err := ch.Consume(
@@ -87,11 +89,11 @@ func subscribe(rabbitmq *amqp.Connection, stream chan model.CrawlWebsite) {
 func (f *ampqMessageConsumer) Consume(c context.Context) chan model.CrawlWebsite {
 	stream := make(chan model.CrawlWebsite)
 
-	go subscribe(f.rabbitmq, stream)
+	go subscribe(f.rabbitmq, f.logger, stream)
 
 	return stream
 }
 
-func NewMessageConsumer(rabbitmq *amqp.Connection) service.MessageConsumer {
-	return &ampqMessageConsumer{rabbitmq: rabbitmq}
+func NewMessageConsumer(rabbitmq *amqp.Connection, logger *log.Logger) service.MessageConsumer {
+	return &ampqMessageConsumer{rabbitmq: rabbitmq, logger: logger}
 }
