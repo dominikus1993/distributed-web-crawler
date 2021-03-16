@@ -1,6 +1,7 @@
 package main
 
 import (
+	dapr "github.com/dapr/go-sdk/client"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,5 +17,9 @@ func createLogger() *log.Logger {
 func main() {
 	logger := createLogger()
 	logger.Infoln("Start Service")
-
+	client, err := dapr.NewClient()
+	if err != nil {
+		panic(err)
+	}
+	defer client.Close()
 }
