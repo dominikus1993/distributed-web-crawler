@@ -1,0 +1,1 @@
+ dapr run --app-id crawler --app-port 5000 --dapr-http-port 3503 go run .
