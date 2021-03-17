@@ -1,7 +1,7 @@
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: <name>
+  name: rabbitmq
 spec:
   type: bindings.rabbitmq
   metadata:
