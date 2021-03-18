@@ -6,54 +6,24 @@ import (
 	"crawler/domain/model"
 	"encoding/json"
 
-	"github.com/streadway/amqp"
+	dapr "github.com/dapr/go-sdk/client"
 )
 
-const ExchangeName = "crawled-media"
-
-type ampqPublisher struct {
-	rabbitmq *amqp.Connection
+type daprPublisher struct {
+	client      dapr.Client
+	topic       string
+	pubsubaname string
 }
 
-func (f *ampqPublisher) Publish(c context.Context, msg *model.CrawledWebsite) error {
-	ch, err := f.rabbitmq.Channel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-
-	err = ch.ExchangeDeclare(
-		ExchangeName, // name
-		"topic",      // type
-		true,         // durable
-		false,        // auto-deleted
-		false,        // internal
-		false,        // no-wait
-		nil,          // arguments
-	)
-
-	if err != nil {
-		return err
-	}
-
+func (f *daprPublisher) Publish(c context.Context, msg *model.CrawledWebsite) error {
 	res, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
-
-	err = ch.Publish(
-		ExchangeName, // exchange
-		"#",          // routing key
-		false,        // mandatory
-		false,        // immediate
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        res,
-		})
-
+	err = f.client.PublishEvent(c, f.pubsubaname, f.topic, res)
 	return err
 }
 
-func NewMessagePublisher(rabbitmq *amqp.Connection) service.MessagePublisher {
-	return &ampqPublisher{rabbitmq: rabbitmq}
+func NewMessagePublisher(client dapr.Client, topic string, pubsubname string) service.MessagePublisher {
+	return &daprPublisher{client: client, topic: topic, pubsubaname: pubsubname}
 }

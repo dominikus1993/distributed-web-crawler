@@ -12,6 +12,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type DaprSubscription struct {
+	PubSubName string `json:"pubsubname"`
+	Topic      string `json:"topic"`
+	Route      string `json:"route"`
+}
+
 func createLogger() *log.Logger {
 	logger := log.New()
 	logger.Formatter = &log.JSONFormatter{
@@ -34,10 +40,26 @@ func hello(d dapr.Client) func(http.ResponseWriter, *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintln(w, "Error dapr", err)
 		}
-
-		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, "Welcome!")
 	}
+}
+
+func getDaprSubscriptions(w http.ResponseWriter, r *http.Request) {
+	log.Infoln("AAAA")
+
+	subs := [1]DaprSubscription{DaprSubscription{PubSubName: "pubsub", Topic: "test", Route: "testsub"}}
+	res, err := json.Marshal(subs)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Error")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
+func subscribe(w http.ResponseWriter, r *http.Request) {
+	log.Infoln("BBBBB")
 }
 
 func main() {
@@ -50,7 +72,8 @@ func main() {
 	defer client.Close()
 	router := mux.NewRouter()
 	router.HandleFunc("/hello", hello(client))
-
+	router.HandleFunc("/dapr/subscribe", getDaprSubscriptions)
+	router.HandleFunc("/testsub", subscribe)
 	srv := &http.Server{
 		Handler: router,
 		Addr:    "127.0.0.1:5000",
