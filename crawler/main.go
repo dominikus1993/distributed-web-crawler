@@ -72,7 +72,7 @@ func main() {
 	publisher := service.NewMessagePublisher(client, topic, pubsubname)
 	consumer := service.NewMessageConsumer(stream)
 	usecase := usecase.NewCrawlerUseCase(parser, publisher, consumer)
-	ctx := context.Background()
+	ctx, cancelWorkers := context.WithCancel(context.Background())
 	usecase.StartCrawling(ctx)
 	router := mux.NewRouter()
 	router.HandleFunc("/dapr/subscribe", getDaprSubscriptions)
@@ -85,7 +85,11 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	log.Fatal(srv.ListenAndServe())
-	ctx.Done()
+	err = srv.ListenAndServe()
+	if err != nil {
+		logger.WithError(err).Fatalln("App host terminated")
+	}
+	cancelWorkers()
+	close(stream)
 	log.Println("Stop Service")
 }
