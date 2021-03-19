@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
+	"crawler/application/usecase"
 	"crawler/domain/model"
+	"crawler/infrastructure/env"
+	"crawler/infrastructure/service"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,27 +31,8 @@ func createLogger() *log.Logger {
 	return logger
 }
 
-func hello(d dapr.Client) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		resp := model.CrawledWebsite{Url: "tets"}
-		res, err := json.Marshal(resp)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Error")
-		}
-		err = d.PublishEvent(r.Context(), "pubsub", "test", res)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Error dapr", err)
-		}
-		fmt.Fprintln(w, "Welcome!")
-	}
-}
-
 func getDaprSubscriptions(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("AAAA")
-
-	subs := [1]DaprSubscription{DaprSubscription{PubSubName: "pubsub", Topic: "test", Route: "testsub"}}
+	subs := [1]DaprSubscription{{PubSubName: "pubsub", Topic: env.GetEnvOrDefault("DAPR_SUB_TOPIC", "crawl-website"), Route: "crawl"}}
 	res, err := json.Marshal(subs)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -58,8 +43,17 @@ func getDaprSubscriptions(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func subscribe(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("BBBBB")
+func subscribe(stream chan<- model.CrawlWebsite, logger *log.Logger) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Infoln("Subscribe")
+		var res model.CrawlWebsite
+		err := json.NewDecoder(r.Body).Decode(&res)
+		if err != nil {
+			logger.WithContext(r.Context()).WithError(err).Errorln("Error when trying read model in subscrition")
+		} else {
+			stream <- res
+		}
+	}
 }
 
 func main() {
@@ -70,10 +64,19 @@ func main() {
 		panic(err)
 	}
 	defer client.Close()
+	stream := make(chan model.CrawlWebsite)
+	log.Println("Start Service")
+	topic := env.GetEnvOrDefault("DAPR_PUBLISH_TOPIC", "crawled")
+	pubsubname := env.GetEnvOrDefault("DAPR_PUBSUB_NAME", "pubsub")
+	parser := service.NewWebsiteParser()
+	publisher := service.NewMessagePublisher(client, topic, pubsubname)
+	consumer := service.NewMessageConsumer(stream)
+	usecase := usecase.NewCrawlerUseCase(parser, publisher, consumer)
+	ctx := context.Background()
+	usecase.StartCrawling(ctx)
 	router := mux.NewRouter()
-	router.HandleFunc("/hello", hello(client))
 	router.HandleFunc("/dapr/subscribe", getDaprSubscriptions)
-	router.HandleFunc("/testsub", subscribe)
+	router.HandleFunc("/crawl", subscribe(stream, logger))
 	srv := &http.Server{
 		Handler: router,
 		Addr:    "127.0.0.1:5000",
@@ -83,4 +86,6 @@ func main() {
 	}
 
 	log.Fatal(srv.ListenAndServe())
+	ctx.Done()
+	log.Println("Stop Service")
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type MessageConsumer interface {
-	Consume(c context.Context) chan model.CrawlWebsite
+	Consume(c context.Context) <-chan model.CrawlWebsite
 }
 
 type MessagePublisher interface {
