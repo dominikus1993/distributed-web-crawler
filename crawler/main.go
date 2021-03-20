@@ -5,14 +5,15 @@ import (
 	"crawler/application/usecase"
 	"crawler/domain/model"
 	"crawler/infrastructure/env"
+	"crawler/infrastructure/logging"
 	"crawler/infrastructure/service"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	dapr "github.com/dapr/go-sdk/client"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,14 +59,14 @@ func subscribe(stream chan<- model.CrawlWebsite, logger *log.Logger) func(http.R
 
 func main() {
 	logger := createLogger()
-	logger.Infoln("Start Service")
+	logger.Infoln("Start App")
 	client, err := dapr.NewClient()
 	if err != nil {
 		panic(err)
 	}
 	defer client.Close()
+	logger.Infoln("Dapr initizlized")
 	stream := make(chan model.CrawlWebsite)
-	log.Println("Start Service")
 	topic := env.GetEnvOrDefault("DAPR_PUBLISH_TOPIC", "crawled")
 	pubsubname := env.GetEnvOrDefault("DAPR_PUBSUB_NAME", "pubsub")
 	parser := service.NewWebsiteParser()
@@ -73,23 +74,22 @@ func main() {
 	consumer := service.NewMessageConsumer(stream)
 	usecase := usecase.NewCrawlerUseCase(parser, publisher, consumer)
 	ctx, cancelWorkers := context.WithCancel(context.Background())
-	usecase.StartCrawling(ctx)
-	router := mux.NewRouter()
+	go usecase.StartCrawling(ctx)
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(logging.NewStructuredLogger(logger))
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.Heartbeat("/ping"))
 	router.HandleFunc("/dapr/subscribe", getDaprSubscriptions)
 	router.HandleFunc("/crawl", subscribe(stream, logger))
-	srv := &http.Server{
-		Handler: router,
-		Addr:    "127.0.0.1:5000",
-		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
 
-	err = srv.ListenAndServe()
+	logger.Infoln("Start Service")
+	err = http.ListenAndServe(":5000", router)
 	if err != nil {
 		logger.WithError(err).Fatalln("App host terminated")
 	}
 	cancelWorkers()
 	close(stream)
-	log.Println("Stop Service")
+	logger.Infoln("Stop Service")
 }
