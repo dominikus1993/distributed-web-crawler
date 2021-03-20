@@ -1,34 +1,31 @@
 import express from "express";
 import http from "http";
 import socketIo, { Server } from "socket.io";
-import rabbit from "amqp-connection-manager";
-
 const port = process.env.PORT || 4001;
 import { IndexController } from "./routes/index";
 import { Socket } from "socket.io";
-import { RabbitMqBus } from "./infrastructure/rabbitmq";
-import { CrawledMedia } from "./domain/model";
 import { StatusController } from "./routes/status";
 import cors from "cors"
+import { DaprClient } from "./infrastructure/dapr";
+import { DaprSubcriptionController } from "./routes/dapr";
 
 const router = express.Router();
 const app = express();
 app.use(cors({origin: "*" }))
 app.use(express.json())
 
-const bus = RabbitMqBus.from(process.env.RABBITMQ_CONNECTION ?? "amqp://guest:guest@localhost:5672/")
-
-
-app.use(IndexController.from(router, bus).routes());
+const client = new DaprClient()
+let io: Socket | undefined = undefined;
+app.use(IndexController.from(router, client).routes());
 app.use(StatusController.from(router).routes());
+app.use(DaprSubcriptionController.from(router, io).routes());
 const server = http.createServer(app);
 
-const io: Socket = (socketIo as any)(server, { cors: { orgin: "*" }}); // < Interesting!
+io = (socketIo as any)(server, { cors: { orgin: "*" }}); // < Interesting!
 
-bus.consume({ exchange: "crawled-media", queue: "crawled-media-app"}, (model: CrawledMedia) => {
-  console.log(model.url);
-  io.emit("new-crawled-media", model)
-});
+if(io === undefined) {
+  throw new Error("Can't start socket")
+}
 
 const getApiAndEmit = (socket: Socket) => {
     const response = new Date();

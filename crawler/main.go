@@ -67,7 +67,7 @@ func main() {
 	defer client.Close()
 	logger.Infoln("Dapr initizlized")
 	stream := make(chan model.CrawlWebsite)
-	topic := env.GetEnvOrDefault("DAPR_PUBLISH_TOPIC", "crawled")
+	topic := env.GetEnvOrDefault("DAPR_PUBLISH_TOPIC", "crawled-media")
 	pubsubname := env.GetEnvOrDefault("DAPR_PUBSUB_NAME", "pubsub")
 	parser := service.NewWebsiteParser()
 	publisher := service.NewMessagePublisher(client, topic, pubsubname)

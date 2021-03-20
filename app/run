@@ -1,0 +1,1 @@
+ dapr run --app-id app --app-port 4001 --dapr-http-port 3504 npm start
