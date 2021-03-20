@@ -20,7 +20,8 @@ export class DaprClient {
         const event = new messages.PublishEventRequest();
         event.setTopic("crawl-website")
         event.setPubsubName("pubsub")
-        event.setDataContentType('application/json');
+        event.setDataContentType('text/plain');
+        console.log(msg.message)
         event.setData(Buffer.from(JSON.stringify(msg.message)))
         this.#dapr.publishEvent(event, (err, res) => {
             if(err) {

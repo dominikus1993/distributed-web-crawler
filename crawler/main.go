@@ -54,6 +54,9 @@ func subscribe(stream chan<- model.CrawlWebsite, logger *log.Logger) func(http.R
 		} else {
 			stream <- res
 		}
+
+		logger.WithField("website", res.Url).Infoln("Json obtained")
+		stream <- res
 	}
 }
 

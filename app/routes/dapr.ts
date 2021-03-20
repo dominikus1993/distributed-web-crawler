@@ -22,7 +22,7 @@ export class DaprSubcriptionController {
                 this.#socket.emit("new-crawled-media", model)
             }
         
-            res.send({ status: "ok" }).status(200);
+            res.status(200);
         })
         return this.#router;
     }
