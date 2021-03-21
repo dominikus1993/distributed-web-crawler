@@ -1,7 +1,7 @@
 package model
 
 type CrawlWebsite struct {
-	Url string `json:"url,omitempty"`
+	Url string `json:"url,omitempty" bson:"url,omitempty`
 }
 
 type Content struct {
