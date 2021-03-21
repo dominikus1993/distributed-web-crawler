@@ -23,6 +23,10 @@ type DaprSubscription struct {
 	Route      string `json:"route"`
 }
 
+type DaprSubscribeMessage struct {
+	Data model.CrawlWebsite `json:"data"`
+}
+
 func createLogger() *log.Logger {
 	logger := log.New()
 	logger.Formatter = &log.JSONFormatter{
@@ -47,16 +51,16 @@ func getDaprSubscriptions(w http.ResponseWriter, r *http.Request) {
 func subscribe(stream chan<- model.CrawlWebsite, logger *log.Logger) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Infoln("Subscribe")
-		var res model.CrawlWebsite
+		var res DaprSubscribeMessage
 		err := json.NewDecoder(r.Body).Decode(&res)
 		if err != nil {
 			logger.WithContext(r.Context()).WithError(err).Errorln("Error when trying read model in subscrition")
 		} else {
-			stream <- res
+			logger.WithField("website", res.Data.Url).Infoln("Json obtained")
+			stream <- res.Data
+			w.WriteHeader(http.StatusOK)
 		}
 
-		logger.WithField("website", res.Url).Infoln("Json obtained")
-		stream <- res
 	}
 }
 
@@ -84,6 +88,7 @@ func main() {
 	router.Use(logging.NewStructuredLogger(logger))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Heartbeat("/ping"))
+	router.Use(middleware.AllowContentType("application/*+json", "application/json"))
 	router.HandleFunc("/dapr/subscribe", getDaprSubscriptions)
 	router.HandleFunc("/crawl", subscribe(stream, logger))
 

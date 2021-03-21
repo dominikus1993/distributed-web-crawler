@@ -2,23 +2,22 @@ import express from "express";
 import http from "http";
 import socketIo, { Server } from "socket.io";
 const port = process.env.PORT || 4001;
-import { IndexController } from "./routes/index";
+import index from "./routes/index";
 import { Socket } from "socket.io";
-import { StatusController } from "./routes/status";
+import status from "./routes/status";
 import cors from "cors"
-import { DaprClient } from "./infrastructure/dapr";
-import { DaprSubcriptionController } from "./routes/dapr";
+import dapr from "./routes/dapr";
+import { publish } from "./infrastructure/dapr";
 
 const router = express.Router();
 const app = express();
 app.use(cors({origin: "*" }))
-app.use(express.json())
-
-const client = new DaprClient()
+app.use(express.json({ type: 'application/*+json' }))
+app.use(express.json({ type: 'application/json' }))
 let io: Socket | undefined = undefined;
-app.use(IndexController.from(router, client).routes());
-app.use(StatusController.from(router).routes());
-app.use(DaprSubcriptionController.from(router, io).routes());
+app.use(index(publish)(router));
+app.use(status(router));
+app.use(dapr(io)(router));
 const server = http.createServer(app);
 
 io = (socketIo as any)(server, { cors: { orgin: "*" }}); // < Interesting!
